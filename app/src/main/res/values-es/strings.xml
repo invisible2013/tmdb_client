@@ -9,4 +9,7 @@
     <string name="favorite">Favorite</string>
     <string name="favorite_data_not_available">You havent choose favorite yet</string>
     <string name="poster_image">Poster Image</string>
+    <string name="release_date">Release Date:</string>
+    <string name="overview">Overview</string>
+    <string name="movie_detail">Movie Detail</string>
 </resources>

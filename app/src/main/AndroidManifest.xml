@@ -23,6 +23,7 @@
         </activity>
         <activity
             android:name=".MovieDetailActivity"
+            android:label="@string/movie_detail"
             android:parentActivityName=".MoviesActivity"
             android:screenOrientation="portrait" />
     </application>
