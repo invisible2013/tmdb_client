@@ -1,71 +1,106 @@
 package com.flatrocktech.mymovies;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import android.app.ProgressDialog;
 import android.os.Bundle;
-import android.widget.Toast;
+import android.view.Window;
+import android.view.WindowManager;
 
-import com.flatrocktech.mymovies.service.ApiClient;
-import com.flatrocktech.mymovies.service.ApiInterface;
-import com.flatrocktech.mymovies.service.models.Movie;
-import com.flatrocktech.mymovies.service.models.MovieResponse;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.List;
-import java.util.Properties;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import com.flatrocktech.mymovies.service.gateway.MovieProvider;
+import com.flatrocktech.mymovies.service.gateway.methods.GetAllMoviesCall;
+import com.flatrocktech.mymovies.service.gateway.methods.GetFavouriteMoviesCall;
+import com.flatrocktech.mymovies.service.gateway.methods.GetPopularMoviesCall;
+import com.flatrocktech.mymovies.service.gateway.methods.GetTopRatedMoviesCall;
+import com.google.android.material.tabs.TabLayout;
 
 public class MoviesActivity extends AppCompatActivity {
 
-    private MovieAdapter adapter;
-    private RecyclerView recyclerView;
-    private ProgressDialog progressDialog;
-    private List<Movie> movieList;
+    private TabLayout mTabLayout;
+    private ViewPager mViewPager;
+    private MoviePagerAdapter mMoviePagerAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getSupportActionBar().hide();
+        this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_movies);
-        progressDialog = new ProgressDialog(MoviesActivity.this);
-        progressDialog.setMessage(getResources().getString(R.string.loading));
-        progressDialog.show();
+        mTabLayout = findViewById(R.id.movies_tab);
 
-        getMovies();
-    }
 
-    public void getMovies() {
-        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mViewPager = findViewById(R.id.movies_view_pager);
+        mMoviePagerAdapter = new MoviePagerAdapter(getSupportFragmentManager(),
+                FragmentPagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
+        mViewPager.setAdapter(mMoviePagerAdapter);
 
-        Call<MovieResponse> call = apiInterface.getMovies(BuildConfig.TMDB_KEY);
-        call.enqueue(new Callback<MovieResponse>() {
+        mTabLayout.setupWithViewPager(mViewPager);
+
+        mTabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
-            public void onResponse(Call<MovieResponse> call, Response<MovieResponse> response) {
-                progressDialog.dismiss();
-                generateDataList(response.body());
+            public void onTabSelected(TabLayout.Tab tab) {
+                mViewPager.setCurrentItem(tab.getPosition());
             }
 
             @Override
-            public void onFailure(Call<MovieResponse> call, Throwable t) {
-                progressDialog.dismiss();
-                Toast.makeText(MoviesActivity.this, R.string.something_went_wrong, Toast.LENGTH_SHORT).show();
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
             }
         });
+
     }
 
-    private void generateDataList(MovieResponse response) {
-        recyclerView = findViewById(R.id.movies_recycler_view);
-        movieList = response.getItems();
-        adapter = new MovieAdapter(movieList, this);
-        RecyclerView.LayoutManager layoutManager = new GridLayoutManager(MoviesActivity.this, 3);
-        recyclerView.setLayoutManager(layoutManager);
-        recyclerView.setAdapter(adapter);
+    class MoviePagerAdapter extends FragmentPagerAdapter {
 
+        public MoviePagerAdapter(@NonNull FragmentManager fm, int behavior) {
+            super(fm, behavior);
+        }
+
+        @NonNull
+        @Override
+        public Fragment getItem(int position) {
+            MoviesFragment moviesFragment = new MoviesFragment();
+            moviesFragment.setMovieProvider(Tabs.values()[position].movieProvider);
+            moviesFragment.setTabId(position);
+            return moviesFragment;
+        }
+
+        @Override
+        public int getCount() {
+            return Tabs.values().length;
+        }
+
+        @Nullable
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return getResources().getString(Tabs.values()[position].title);
+        }
+    }
+
+    enum Tabs {
+        ALL(R.string.all, new GetAllMoviesCall()),
+        POPULAR(R.string.popular, new GetPopularMoviesCall()),
+        TOP_RATED(R.string.top_rated, new GetTopRatedMoviesCall()),
+        FAVORITE(R.string.favorite, new GetFavouriteMoviesCall());
+        int title;
+        MovieProvider movieProvider;
+
+        Tabs(int title, MovieProvider movieProvider) {
+            this.title = title;
+            this.movieProvider = movieProvider;
+        }
     }
 }

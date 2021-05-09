@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.flatrocktech.mymovies.service.ApiClient;
+import com.flatrocktech.mymovies.service.gateway.ApiClient;
 import com.flatrocktech.mymovies.service.models.Movie;
 import com.jakewharton.picasso.OkHttp3Downloader;
 import com.squareup.picasso.Picasso;
@@ -39,22 +39,21 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.CustomViewHo
     @Override
     public void onBindViewHolder(@NonNull CustomViewHolder holder, int position) {
         CardView cardView = holder.cardView;
+        ImageView moviePoster = cardView.findViewById(R.id.movie_item_image);
 
         Picasso.Builder builder = new Picasso.Builder(context);
         builder.downloader(new OkHttp3Downloader(context));
         Movie item = dataList.get(position);
+
         builder.build()
                 .load(ApiClient.getImageFullPath(item.getPosterPath()))
-                .placeholder((R.drawable.ic_launcher_background))
-                .error(R.drawable.ic_launcher_background)
-                .into(holder.moviePoster);
+                .into(moviePoster);
 
         cardView.setOnClickListener(v -> {
             Intent intent = new Intent(context, MovieDetailActivity.class);
             intent.putExtra(MOVIE_ID, item.getId());
             context.startActivity(intent);
         });
-
     }
 
     @Override
@@ -64,14 +63,11 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.CustomViewHo
 
 
     class CustomViewHolder extends RecyclerView.ViewHolder {
-
-        private final ImageView moviePoster;
         private CardView cardView;
 
         CustomViewHolder(CardView itemView) {
             super(itemView);
             cardView = itemView;
-            moviePoster = itemView.findViewById(R.id.movie_item_image);
         }
     }
 }

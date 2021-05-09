@@ -2,22 +2,24 @@ package com.flatrocktech.mymovies;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 
-import com.flatrocktech.mymovies.service.ApiClient;
-import com.flatrocktech.mymovies.service.ApiInterface;
+import com.flatrocktech.mymovies.data.MovieServiceDBImpl;
+import com.flatrocktech.mymovies.data.MoviesService;
+import com.flatrocktech.mymovies.service.gateway.ApiClient;
+import com.flatrocktech.mymovies.service.gateway.Callback;
+import com.flatrocktech.mymovies.service.gateway.methods.GetMovieCall;
 import com.flatrocktech.mymovies.service.models.Movie;
 import com.jakewharton.picasso.OkHttp3Downloader;
 import com.squareup.picasso.Picasso;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class MovieDetailActivity extends AppCompatActivity {
 
@@ -27,6 +29,10 @@ public class MovieDetailActivity extends AppCompatActivity {
     private TextView mReleaseDate;
     private TextView mRating;
     private TextView mOverview;
+    private Movie mSelectedMovie;
+    private ImageView mFavorite;
+
+    private MoviesService moviesService;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -34,35 +40,47 @@ public class MovieDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_movie_details);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        moviesService = new MovieServiceDBImpl();
         mPoster = findViewById(R.id.movie_detail_poster);
         mTitle = findViewById(R.id.movie_detail_title);
         mOriginalTitle = findViewById(R.id.movie_detail_original_title);
         mReleaseDate = findViewById(R.id.movie_detail_release_date);
         mRating = findViewById(R.id.movie_detail_rating);
         mOverview = findViewById(R.id.movie_detail_overview);
+        mFavorite = findViewById(R.id.movie_detail_favorite_button);
+
         Intent intent = getIntent();
         String movieId = intent.getStringExtra(MovieAdapter.MOVIE_ID);
         getMovieDetails(Long.parseLong(movieId));
+
+        if (moviesService.isFavourite(movieId)) {
+            mFavorite.setOnClickListener(this::unSetFavorite);
+            DrawableCompat.setTint(mFavorite.getDrawable(),
+                    ContextCompat.getColor(this, R.color.light_green));
+        } else {
+            mFavorite.setOnClickListener(this::setFavorite);
+        }
     }
 
 
     private void getMovieDetails(long movieId) {
-        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-        Call<Movie> call = apiInterface.getMovie(movieId, BuildConfig.TMDB_KEY);
-        call.enqueue(new Callback<Movie>() {
+        GetMovieCall getMovieCall = new GetMovieCall();
+        getMovieCall.setMovieId(movieId);
+        getMovieCall.call(new Callback<Movie>() {
             @Override
-            public void onResponse(Call<Movie> call, Response<Movie> response) {
-                generateDetailInfo(response.body());
+            public void onSuccess(Movie movie) {
+                generateDetailInfo(movie);
             }
 
             @Override
-            public void onFailure(Call<Movie> call, Throwable t) {
-                Toast.makeText(MovieDetailActivity.this, R.string.something_went_wrong, Toast.LENGTH_SHORT).show();
+            public void onFailure(int message) {
+                Toast.makeText(MovieDetailActivity.this, message, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void generateDetailInfo(Movie movie) {
+        mSelectedMovie = movie;
         mTitle.setText(movie.getTitle());
         mOriginalTitle.setText(movie.getOriginalTitle());
         mReleaseDate.setText(movie.getReleaseDate());
@@ -74,8 +92,22 @@ public class MovieDetailActivity extends AppCompatActivity {
         builder.downloader(new OkHttp3Downloader(this));
         builder.build()
                 .load(ApiClient.getImageFullPath(movie.getPosterPath()))
-                .placeholder((R.drawable.ic_launcher_background))
-                .error(R.drawable.ic_launcher_background)
                 .into(mPoster);
+    }
+
+    public void setFavorite(View view) {
+        moviesService.setFavourite(mSelectedMovie);
+        DrawableCompat.setTint(mFavorite.getDrawable(),
+                ContextCompat.getColor(this, R.color.light_green));
+        mFavorite.setOnClickListener(this::unSetFavorite);
+        MoviesFragment.MANUAL_UPDATE = true;
+    }
+
+    public void unSetFavorite(View view) {
+        moviesService.unsetFavourite(mSelectedMovie.getId());
+        DrawableCompat.setTint(mFavorite.getDrawable(),
+                ContextCompat.getColor(this, R.color.material_on_background_disabled));
+        mFavorite.setOnClickListener(this::setFavorite);
+        MoviesFragment.MANUAL_UPDATE = true;
     }
 }

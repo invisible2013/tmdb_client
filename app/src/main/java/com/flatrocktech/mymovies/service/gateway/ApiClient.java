@@ -1,4 +1,4 @@
-package com.flatrocktech.mymovies.service;
+package com.flatrocktech.mymovies.service.gateway;
 
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;

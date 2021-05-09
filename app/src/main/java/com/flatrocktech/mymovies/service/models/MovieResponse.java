@@ -1,6 +1,5 @@
 package com.flatrocktech.mymovies.service.models;
 
-import com.flatrocktech.mymovies.BuildConfig;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
