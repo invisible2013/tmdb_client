@@ -14,8 +14,6 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.flatrocktech.mymovies.data.MovieServiceDBImpl;
-import com.flatrocktech.mymovies.data.MoviesService;
 import com.flatrocktech.mymovies.service.gateway.Callback;
 import com.flatrocktech.mymovies.service.gateway.MovieProvider;
 import com.flatrocktech.mymovies.service.models.Movie;
